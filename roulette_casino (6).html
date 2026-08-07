@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>룰렛 게임 과제 연구 참여 동의</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1D17;
+    --bg-panel:#16281F;
+    --bg-panel-2:#1C3227;
+    --ivory:#F1EAD9;
+    --muted:#93AA9C;
+    --gold:#C9A227;
+    --gold-light:#E4C25C;
+    --red:#B3272D;
+    --black:#17171A;
+    --white:#F5F1E8;
+    --danger:#D9534F;
+    --radius:14px;
+    --shadow: 0 10px 30px rgba(0,0,0,0.35);
+  }
+  *{box-sizing:border-box;}
+  html{height:100%;}
+  body{
+    margin:0;
+    min-height:100%;
+    background:radial-gradient(1200px 800px at 50% -10%, #1A3226 0%, var(--bg) 60%) fixed;
+    color:var(--ivory);
+    font-family:'Noto Sans KR', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    /* 화면보다 콘텐츠가 길어도 위/아래가 잘리지 않도록 flex 중앙정렬 대신 자연스러운 세로 스크롤을 사용 */
+    padding:32px 16px 56px;
+    box-sizing:border-box;
+    overflow-x:hidden;
+  }
+  h1,h2,h3{font-family:'Playfair Display', serif; letter-spacing:0.01em; margin:0 0 8px;}
+  .card{
+    width:100%;
+    max-width:560px;
+    margin:0 auto;
+    background:var(--bg-panel);
+    border:1px solid rgba(201,162,39,0.18);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:32px 28px;
+    box-sizing:border-box;
+  }
+  .screen{display:none;}
+  .screen.active{display:block; animation:fadeIn .35s ease;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+  p{line-height:1.7; color:var(--ivory); font-size:15px;}
+  .muted{color:var(--muted); font-size:13px;}
+  .eyebrow{
+    display:inline-block; font-size:11px; letter-spacing:0.14em; color:var(--gold-light);
+    text-transform:uppercase; margin-bottom:10px; font-weight:700;
+  }
+  button{
+    font-family:'Noto Sans KR', sans-serif;
+    cursor:pointer;
+    border:none;
+    border-radius:10px;
+    padding:14px 20px;
+    font-size:15px;
+    font-weight:700;
+    transition: transform .12s ease, opacity .12s ease;
+  }
+  button:active{transform:scale(0.98);}
+  button:disabled{opacity:0.35; cursor:not-allowed;}
+  .btn-primary{
+    background:linear-gradient(180deg, var(--gold-light), var(--gold));
+    color:#1B1404;
+    width:100%;
+    margin-top:18px;
+  }
+  .btn-secondary{
+    background:transparent;
+    border:1px solid rgba(241,234,217,0.3);
+    color:var(--ivory);
+    width:100%;
+  }
+  input[type="text"]{
+    width:100%;
+    padding:14px 16px;
+    border-radius:10px;
+    border:1px solid rgba(241,234,217,0.25);
+    background:var(--bg-panel-2);
+    color:var(--ivory);
+    font-size:18px;
+    letter-spacing:0.1em;
+    text-align:center;
+  }
+  .checkbox-row{
+    display:flex; gap:10px; align-items:flex-start;
+    background:var(--bg-panel-2); border-radius:10px; padding:14px 16px; margin-top:18px;
+  }
+  .checkbox-row input{margin-top:3px;}
+  .divider{height:1px; background:rgba(241,234,217,0.12); margin:20px 0;}
+
+  /* GRCS / Likert */
+  .likert-item{margin-bottom:26px;}
+  .likert-q{font-size:14.5px; margin-bottom:12px; line-height:1.6;}
+  .likert-scale{display:flex; justify-content:space-between; gap:4px;}
+  .likert-opt{flex:1; text-align:center;}
+  .likert-opt input{display:none;}
+  .likert-opt label{
+    display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer;
+  }
+  .likert-dot{
+    width:28px; height:28px; border-radius:50%; border:1px solid rgba(241,234,217,0.35);
+    display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--muted);
+  }
+  .likert-opt input:checked + label .likert-dot{
+    background:var(--gold); border-color:var(--gold); color:#1B1404; font-weight:700;
+  }
+  .likert-caption{font-size:10.5px; color:var(--muted); max-width:60px;}
+
+  /* Task screen */
+  .task-card{max-width:520px;}
+  .hud{
+    display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;
+  }
+  .hud-item{
+    display:flex; align-items:center; gap:8px; background:var(--bg-panel-2);
+    padding:8px 14px; border-radius:999px; font-weight:700; font-size:14px;
+  }
+  .hud-item .icon{font-size:16px;}
+  .wheel-wrap{
+    position:relative; width:280px; height:280px; margin:8px auto 6px;
+  }
+  .wheel-pointer{
+    position:absolute; top:-6px; left:50%; transform:translateX(-50%);
+    width:0; height:0; border-left:12px solid transparent; border-right:12px solid transparent;
+    border-top:20px solid var(--gold-light); z-index:5; filter:drop-shadow(0 2px 3px rgba(0,0,0,0.5));
+  }
+  #wheelGroup{ transform-origin:160px 160px; }
+  .wheel-hub{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:34px; height:34px; border-radius:50%; background:var(--gold);
+    border:3px solid var(--gold-light); z-index:4;
+  }
+  .bet-section{margin-top:14px;}
+  .section-label{font-size:12.5px; color:var(--muted); margin-bottom:8px; text-align:center; letter-spacing:0.04em;}
+
+  /* 선형 슬라이더: 라인 위에서 원(핸들)을 자유롭게 움직여 값을 선택 */
+  .linear-slider{
+    -webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:999px;
+    background:linear-gradient(90deg, var(--gold) 0%, var(--gold) var(--fill,50%), rgba(241,234,217,0.15) var(--fill,50%));
+    outline:none; margin:6px 0 4px;
+  }
+  .linear-slider::-webkit-slider-thumb{
+    -webkit-appearance:none; width:26px; height:26px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--gold-light), var(--gold));
+    border:2px solid #1B1404; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.45);
+  }
+  .linear-slider::-moz-range-thumb{
+    width:26px; height:26px; border-radius:50%; border:2px solid #1B1404;
+    background:radial-gradient(circle at 35% 30%, var(--gold-light), var(--gold)); cursor:pointer;
+  }
+  .linear-slider::-moz-range-track{ height:6px; border-radius:999px; background:rgba(241,234,217,0.15); }
+
+  .wheel-hint{ text-align:center; font-size:12px; color:var(--muted); margin-top:4px; }
+  .selected-number-display{
+    display:none; text-align:center; margin-top:6px; font-size:16px; font-weight:700;
+    color:var(--gold-light);
+  }
+  .result-banner{
+    margin-top:16px; text-align:center; padding:14px; border-radius:10px; font-weight:700;
+    font-size:16px; display:none;
+  }
+  .result-banner.win{display:block; background:rgba(201,162,39,0.18); color:var(--gold-light);}
+  .result-banner.lose{display:block; background:rgba(255,255,255,0.05); color:var(--muted);}
+
+  /* 사후 설문 문항 스타일 */
+  .survey-item{margin-bottom:30px;}
+  .survey-q{font-size:14.5px; line-height:1.6; margin-bottom:6px;}
+  .survey-note{font-size:12px; color:var(--muted); margin-bottom:12px;}
+  .survey-value{text-align:center; font-size:22px; font-weight:700; color:var(--gold-light); margin-top:8px;}
+
+  @keyframes confetti-fall{
+    0%{ transform:translateY(-20px) rotate(0deg); opacity:1; }
+    100%{ transform:translateY(520px) rotate(720deg); opacity:0; }
+  }
+  .confetti-piece{
+    position:fixed; top:0; width:9px; height:16px; z-index:9999; pointer-events:none;
+    animation:confetti-fall 1700ms ease-in forwards;
+  }
+  @keyframes confetti-emoji-rise{
+    0%{ transform:translateY(60px) scale(0.5) rotate(0deg); opacity:0; }
+    12%{ opacity:1; }
+    100%{ transform:translateY(-480px) scale(1.2) rotate(340deg); opacity:0; }
+  }
+  .confetti-emoji{
+    position:fixed; bottom:0; z-index:9999; pointer-events:none;
+    animation:confetti-emoji-rise 2000ms ease-out forwards;
+  }
+  @keyframes win-flash-anim{
+    0%{ opacity:0.6; }
+    100%{ opacity:0; }
+  }
+  .win-flash{
+    position:fixed; inset:0; z-index:9998; pointer-events:none;
+    background:radial-gradient(circle at 50% 38%, rgba(246,222,140,0.65), transparent 62%);
+    animation:win-flash-anim 700ms ease-out forwards;
+  }
+  @keyframes win-pop{
+    0%{ transform:scale(0.6) rotate(-2deg); opacity:0; }
+    55%{ transform:scale(1.12) rotate(1deg); opacity:1; }
+    100%{ transform:scale(1) rotate(0deg); opacity:1; }
+  }
+  @keyframes win-glow{
+    0%,100%{ box-shadow:0 0 20px rgba(201,162,39,0.4); }
+    50%{ box-shadow:0 0 40px rgba(246,222,140,0.85); }
+  }
+  .result-banner.win{
+    animation:win-pop 520ms cubic-bezier(0.2,1.4,0.4,1), win-glow 1100ms ease-in-out 520ms infinite;
+    background:linear-gradient(135deg, rgba(201,162,39,0.4), rgba(246,222,140,0.2)) !important;
+    border:1px solid rgba(246,222,140,0.6);
+  }
+
+  .final-points{text-align:center; margin:18px 0;}
+  .final-points .num{font-size:36px; font-weight:700; color:var(--gold-light); font-family:'Playfair Display',serif;}
+  .raffle-yes{color:var(--gold-light);}
+  .raffle-no{color:var(--muted);}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- 0-1. 연구 설명 및 동의 -->
+  <section class="screen active" id="screen-consent">
+    <div class="card">
+      <span class="eyebrow">연구 참여 안내</span>
+      <h2>룰렛 게임 과제 연구 참여 동의</h2>
+      <p>본 연구는 확률에 기반한 게임 과제를 수행하는 동안 나타나는 의사결정 및 인지 반응을 살펴보는
+      심리학 연구입니다. 참여는 완전히 자발적이며, 참여 도중 언제든지 불이익 없이 중단하실 수 있습니다.</p>
+      <p>본 과제에서는 약 30회의 게임 시행과 짧은 설문에 응답하시게 되며, 소요 시간은 약 15~20분입니다.
+      수집된 자료는 연구 목적으로만 사용되며, 개인을 식별할 수 있는 정보는 분리하여 안전하게 보관됩니다.</p>
+      <p class="muted">문의: [연구책임자 이메일/연락처 기입]</p>
+      <div class="checkbox-row">
+        <input type="checkbox" id="consentCheck">
+        <label for="consentCheck" style="font-size:13.5px; line-height:1.5;">
+          위 내용을 읽고 이해하였으며, 자발적으로 본 연구 참여에 동의합니다.
+        </label>
+      </div>
+      <button class="btn-primary" id="btnConsent" disabled>동의하고 계속하기</button>
+    </div>
+  </section>
+
+  <!-- 참가자 번호 -->
+  <section class="screen" id="screen-pid">
+    <div class="card">
+      <span class="eyebrow">참가자 확인</span>
+      <h2>참가자 번호 입력</h2>
+      <p>본인 전화번호의 <b>맨 뒤 4자리 숫자</b>를 입력해 주세요. 응답 자료 관리 및 답례품 추첨 대상 확인
+      목적으로만 사용됩니다.</p>
+      <input type="text" id="pidInput" maxlength="4" inputmode="numeric" placeholder="예: 1234">
+      <button class="btn-primary" id="btnPid" disabled>다음</button>
+    </div>
+  </section>
+
+  <!-- 1. GRCS 특성 수준 통제감 착각 -->
+  <section class="screen" id="screen-grcs">
+    <div class="card">
+      <span class="eyebrow">사전 설문</span>
+      <h2>평소 도박 관련 생각</h2>
+      <p class="muted">본격적인 게임 과제에 앞서, 평소 생각과 가장 가까운 정도를 1~7점 중에서 선택해 주세요.</p>
+      <div class="divider"></div>
+      <div id="grcsContainer"></div>
+      <button class="btn-primary" id="btnGrcs" disabled>다음</button>
+    </div>
+  </section>
+
+  <!-- 본시행 설명 -->
+  <section class="screen" id="screen-instruction">
+    <div class="card">
+      <span class="eyebrow">본시행 안내</span>
+      <h2>게임 방법 안내</h2>
+      <p>지금부터 총 <b>30회</b>의 룰렛 게임을 진행합니다. 시작 시 <b>5,000P</b>가 주어지며,
+      매 시행마다 원하는 만큼(20P~100P) 배팅한 뒤 룰렛을 돌립니다.</p>
+      <p id="condInstructionText"></p>
+      <button class="btn-primary" id="btnStartTask">본시행 시작</button>
+    </div>
+  </section>
+
+  <!-- 2. 본시행 -->
+  <section class="screen" id="screen-task">
+    <div class="card task-card">
+      <div class="hud">
+        <div class="hud-item"><span class="icon">🎫</span><span id="ticketCount">30</span></div>
+        <div class="hud-item"><span class="icon">💰</span><span id="pointCount">5000</span>P</div>
+      </div>
+
+      <div class="wheel-wrap">
+        <div class="wheel-pointer"></div>
+        <svg viewBox="0 0 320 320" width="280" height="280">
+          <g id="wheelGroup"></g>
+        </svg>
+        <div class="wheel-hub"></div>
+      </div>
+      <div class="wheel-hint" id="wheelHint"></div>
+      <div class="selected-number-display" id="selectedNumberDisplay"></div>
+
+      <div class="bet-section">
+        <div class="section-label">배팅액을 선택하세요 (20P ~ 100P)</div>
+        <div class="survey-value" id="betValue">20P</div>
+        <input type="range" class="linear-slider" id="betSlider" min="20" max="100" step="1" value="20">
+      </div>
+
+      <div class="result-banner" id="resultBanner"></div>
+
+      <button class="btn-primary" id="btnSpin">룰렛 시작</button>
+      <button class="btn-secondary" id="btnNextTrial" style="display:none; margin-top:10px;">다음 시행</button>
+    </div>
+  </section>
+
+  <!-- 중간 점검(6시행마다) -->
+  <section class="screen" id="screen-probe">
+    <div class="card">
+      <span class="eyebrow">중간 점검</span>
+      <h2>잠시 답해 주세요</h2>
+      <div id="probeContainer"></div>
+      <button class="btn-primary" id="btnProbe">다음</button>
+    </div>
+  </section>
+
+  <!-- 3. 사후 설문 -->
+  <section class="screen" id="screen-post">
+    <div class="card">
+      <span class="eyebrow">사후 설문</span>
+      <h2>과제를 마친 소감</h2>
+      <div id="postContainer"></div>
+      <button class="btn-primary" id="btnPost" disabled>제출하고 다음</button>
+    </div>
+  </section>
+
+  <!-- 디브리핑 -->
+  <section class="screen" id="screen-debrief">
+    <div class="card">
+      <span class="eyebrow">연구 목적 안내 (디브리핑)</span>
+      <h2>참여해 주셔서 감사합니다</h2>
+      <p>방금 진행하신 게임의 결과 순서는 실제로는 참가자의 배팅이나 선택과 무관하게
+      <b>사전에 정해진 순서</b>로 제시되었습니다. 이는 참가자 간 조건을 동일하게 통제하여
+      게임 형식(선택권 유무)에 따른 심리적 반응 차이만을 살펴보기 위한 절차였습니다.</p>
+      <p>본 연구는 사람들이 확률에 기반한 게임에서 자신의 통제력을 과대평가하는
+      "통제감 착각(illusion of control)" 현상이 게임의 형식에 따라 어떻게 달라지는지를
+      살펴보고자 합니다. 결과에 대해 궁금한 점이 있으시면 언제든 연구자에게 문의해 주세요.</p>
+      <div class="final-points">
+        <div class="muted">최종 누적 포인트</div>
+        <div class="num" id="finalPointsDisplay">0</div>
+        <div id="raffleNote" class="muted"></div>
+      </div>
+      <button class="btn-primary" id="btnSubmit">응답 제출하기</button>
+    </div>
+  </section>
+
+  <!-- 종료 -->
+  <section class="screen" id="screen-end">
+    <div class="card">
+      <h2>제출이 완료되었습니다</h2>
+      <p>소중한 시간을 내어 참여해 주셔서 진심으로 감사드립니다. 창을 닫으셔도 됩니다.</p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* ============================================================
+   0. 실험 설정값 (CONFIG) — 연구자가 조정하는 부분
+   ============================================================ */
+const CONFIG = {
+  // Google Apps Script 웹 앱 배포 URL로 교체할 것
+  GAS_URL: "https://script.google.com/macros/s/REPLACE_WITH_YOUR_DEPLOYMENT_ID/exec",
+  INITIAL_POINTS: 5000,
+  BET_MIN: 20,
+  BET_MAX: 100,
+  BET_STEP: 10,
+  WIN_MULTIPLIER: 5,     // 승리 시 배팅액의 5배를 총 지급 (순이익은 배팅액의 4배)
+  TOTAL_TRIALS: 30,
+  RAFFLE_THRESHOLD: 7000,
+  N_SEGMENTS: 20,
+  SPIN_DURATION_MS: 5800
+};
+
+// 엑셀 시행 세트를 그대로 반영한 30시행 결과 순서 (between 설계이므로 두 조건 모두 동일하게 적용)
+const OUTCOME_SEQUENCE = [
+  "NEARMISS","WIN","FULLMISS","FULLMISS","NEARMISS","FULLMISS","NEARMISS","FULLMISS","FULLMISS","NEARMISS",
+  "WIN","FULLMISS","FULLMISS","WIN","FULLMISS","NEARMISS","FULLMISS","NEARMISS","NEARMISS","FULLMISS",
+  "NEARMISS","FULLMISS","WIN","FULLMISS","FULLMISS","WIN","FULLMISS","NEARMISS","NEARMISS","FULLMISS"
+];
+// 확인: WIN 5회(1/6), NEARMISS 10회(2/6), FULLMISS 15회(3/6) = 30시행
+
+const GRCS_ITEMS = [
+  "난 한 번 따면 틀림없이 또 따게 된다.",
+  "몇 차례 잃은 후에는 연속적으로 꼭 따게 되어 있다.",
+  "확률형 게임을 또 하게 되는 이유는 해당 게임에서 이기는 것이 나의 기술과 능력 때문이라는 생각이 들기 때문이기도 하다.",
+  "딸 가능성을 높여주는 나만의 특정 의식과 행동이 있다.",
+  "특정 숫자와 색깔을 내가 딸 가능성을 높이는데 도움이 된다.",
+  "나는 딸 가능성을 높이기 위해 특정한 행운의 물건을 가지고 확률형 게임을 한다."
+];
+
+const POST_ITEMS = [
+  { id:"post1", type:"scale", min:0, max:100, step:5, q:"이 과제를 얼마나 잘한다고 생각하십니까?" },
+  { id:"post2", type:"scale", min:0, max:100, step:5, q:"지금보다 더 집중할 수 있는 환경이 주어진다면 이 과제를 얼마나 잘할 것이라고 생각하십니까?" },
+  { id:"post3", type:"scale", min:0, max:100, step:5, q:"연습하면 얼마나 더 잘할 것이라고 생각하십니까?" },
+  { id:"post4", type:"scale", min:0, max:30, step:1, q:"지난 30번의 시행에서 몇 번의 승리를 거두었습니까?", note:"정확하지 않아도 괜찮습니다." },
+  { id:"post5", type:"scale", min:0, max:100, step:5, q:"다음 100번의 시행에서는 몇 번의 승리를 거둘 것이라고 생각하십니까?" },
+  { id:"post6", type:"likert7", q:"1000포인트를 차감하고 10번의 시행을 더 할 수 있다면 그렇게 하시겠습니까?" }
+];
+
+// 6시행마다(6, 12, 18, 24, 30회차) 묻는 중간 점검 문항 — 0~100 슬라이더("휠")로 응답
+const PROBE_ITEMS = [
+  { id:"probe_prob", q:"당신이 당첨될 확률은 어느 정도인 것 같습니까?" },
+  { id:"probe_continue", q:"이 게임을 계속하고 싶은 정도는 어느 정도입니까?" }
+];
+
+/* ============================================================
+   1. 조건 배정
+   실제 배포 시에는 무작위 배정 후 조건별 링크(?cond=general / ?cond=casino)를
+   미리 나눠 발송하는 방식을 권장합니다(집단별 n 동일하게 통제 가능).
+   링크에 파라미터가 없으면 임시로 50:50 무작위 배정됩니다.
+   ============================================================ */
+// 이 파일은 "casino" 조건 전용 버전입니다 (조건별로 별도 웹사이트를 배포).
+function getCondition() {
+  return "casino";
+}
+
+/* ============================================================
+   2. 전역 상태
+   ============================================================ */
+const state = {
+  condition: getCondition(),
+  participantId: "",
+  consentTime: null,
+  grcs: {},
+  points: CONFIG.INITIAL_POINTS,
+  trialIndex: 0,          // 0-based, 다음에 진행할 시행
+  wheelNumberOrder: [],   // 카지노 조건: 20개 세그먼트에 배치된 숫자 순서(세션 1회 고정)
+  wheelRotation: 0,       // 누적 회전각(연속적인 회전 애니메이션 위해 유지)
+  trials: [],             // 시행별 로그
+  selectedBet: CONFIG.BET_MIN,
+  selectedNumber: null,
+  currentTargetIndex: null, // 이번 시행에서 배팅 단계부터 표시되는 당첨 칸 인덱스
+  isSpinning: false,        // 스핀 중에는 카지노 조건에서 칸을 다시 선택할 수 없도록 잠금
+  checkpoints: [],          // 6시행마다 묻는 중간 점검 응답 로그
+  post: {}
+};
+
+/* ============================================================
+   3. 화면 전환
+   ============================================================ */
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+/* ============================================================
+   4. 0단계: 동의 및 참가자 번호
+   ============================================================ */
+document.getElementById("consentCheck").addEventListener("change", (e) => {
+  document.getElementById("btnConsent").disabled = !e.target.checked;
+});
+document.getElementById("btnConsent").addEventListener("click", () => {
+  state.consentTime = new Date().toISOString();
+  showScreen("screen-pid");
+});
+
+const pidInput = document.getElementById("pidInput");
+pidInput.addEventListener("input", (e) => {
+  e.target.value = e.target.value.replace(/\D/g, "").slice(0,4);
+  document.getElementById("btnPid").disabled = e.target.value.length !== 4;
+});
+document.getElementById("btnPid").addEventListener("click", () => {
+  state.participantId = pidInput.value;
+  renderGRCS();
+  showScreen("screen-grcs");
+});
+
+/* ============================================================
+   5. 1단계: GRCS (7점 리커트)
+   ============================================================ */
+function renderGRCS() {
+  const container = document.getElementById("grcsContainer");
+  container.innerHTML = "";
+  GRCS_ITEMS.forEach((text, idx) => {
+    const key = "grcs" + (idx+1);
+    const wrap = document.createElement("div");
+    wrap.className = "likert-item";
+    const scaleHtml = [1,2,3,4,5,6,7].map(v => `
+      <div class="likert-opt">
+        <input type="radio" name="${key}" id="${key}_${v}" value="${v}">
+        <label for="${key}_${v}">
+          <span class="likert-dot">${v}</span>
+        </label>
+      </div>`).join("");
+    wrap.innerHTML = `
+      <div class="likert-q">${idx+1}. ${text}</div>
+      <div class="likert-scale">${scaleHtml}</div>
+      <div style="display:flex; justify-content:space-between; margin-top:4px;">
+        <span class="likert-caption">전혀 그렇지 않다</span>
+        <span class="likert-caption" style="text-align:right;">매우 그렇다</span>
+      </div>`;
+    container.appendChild(wrap);
+  });
+  container.addEventListener("change", checkGrcsComplete);
+}
+function checkGrcsComplete() {
+  const complete = GRCS_ITEMS.every((_, idx) => {
+    const key = "grcs" + (idx+1);
+    return document.querySelector(`input[name="${key}"]:checked`);
+  });
+  document.getElementById("btnGrcs").disabled = !complete;
+}
+document.getElementById("btnGrcs").addEventListener("click", () => {
+  GRCS_ITEMS.forEach((_, idx) => {
+    const key = "grcs" + (idx+1);
+    const val = document.querySelector(`input[name="${key}"]:checked`).value;
+    state.grcs[key] = Number(val);
+  });
+  state.grcs.grcs_sum = Object.values(state.grcs).reduce((a,b)=>a+b, 0);
+  prepareInstruction();
+  showScreen("screen-instruction");
+});
+
+/* ============================================================
+   6. 본시행 설명 (조건별 문구)
+   ============================================================ */
+function prepareInstruction() {
+  const text = state.condition === "general"
+    ? "배팅액을 정한 후 '룰렛 시작' 버튼을 누르면 룰렛이 돌아가고, 잠시 후 자동으로 멈춥니다. 당첨되면 배팅액의 5배를 획득합니다."
+    : "룰렛에는 1부터 20까지의 숫자가 무작위 순서로 적혀 있습니다. 배팅액을 정한 뒤 룰렛에서 원하는 숫자 칸을 눌러 선택하세요(다른 칸을 누르면 선택이 바뀝니다). '룰렛 시작' 버튼을 누르면 룰렛이 돌아가고, 잠시 후 자동으로 멈춥니다. 선택한 숫자에 룰렛이 멈추면 당첨되며, 배팅액의 5배를 획득합니다.";
+  document.getElementById("condInstructionText").textContent = text;
+
+  // 카지노 조건: 세션 1회, 20개 세그먼트에 1~20 숫자를 무작위 배치(이후 시행 내내 고정)
+  if (state.condition === "casino" && state.wheelNumberOrder.length === 0) {
+    const nums = Array.from({length:20}, (_,i)=>i+1);
+    for (let i = nums.length-1; i>0; i--) {
+      const j = Math.floor(Math.random()*(i+1));
+      [nums[i], nums[j]] = [nums[j], nums[i]];
+    }
+    state.wheelNumberOrder = nums;
+  }
+}
+document.getElementById("btnStartTask").addEventListener("click", () => {
+  const hint = document.getElementById("wheelHint");
+  hint.textContent = state.condition === "casino" ? "룰렛의 숫자 칸을 눌러 선택하세요." : "";
+  initBetSlider();
+  startTrialSetup();   // 당첨 칸을 배팅 시작 시점부터 미리 표시
+  updateHud();
+  showScreen("screen-task");
+});
+
+/* ============================================================
+   7. 배팅액 선형 슬라이더 (라인 위 원형 핸들을 자유롭게 이동)
+   ============================================================ */
+function initBetSlider() {
+  const slider = document.getElementById("betSlider");
+  const valueEl = document.getElementById("betValue");
+  slider.min = CONFIG.BET_MIN;
+  slider.max = CONFIG.BET_MAX;
+  slider.value = CONFIG.BET_MIN;
+  state.selectedBet = CONFIG.BET_MIN;
+  valueEl.textContent = CONFIG.BET_MIN + "P";
+  updateSliderFill(slider);
+  slider.oninput = (e) => {
+    state.selectedBet = Number(e.target.value);
+    valueEl.textContent = state.selectedBet + "P";
+    updateSliderFill(slider);
+  };
+}
+function updateSliderFill(slider) {
+  const pct = ((Number(slider.value) - Number(slider.min)) / (Number(slider.max) - Number(slider.min))) * 100;
+  slider.style.setProperty("--fill", pct + "%");
+}
+
+/* ============================================================
+   8. 카지노 조건: 룰렛 위에서 직접 숫자 칸 선택
+   (별도의 번호 그리드 없이, 룰렛 세그먼트를 클릭하면 그 칸이 빨갛게 선택됨.
+    다른 칸을 클릭하면 선택이 바뀌고, 한 번에 하나만 선택 가능)
+   ============================================================ */
+function selectCasinoSegment(i) {
+  if (state.isSpinning) return;
+  state.selectedNumber = state.wheelNumberOrder[i];
+  state.currentTargetIndex = i;
+  drawWheel(i);
+
+  // 고른 숫자를 룰렛 옆에 텍스트로도 표시
+  const disp = document.getElementById("selectedNumberDisplay");
+  if (disp) {
+    disp.style.display = "block";
+    disp.textContent = "선택한 숫자: " + state.selectedNumber;
+  }
+}
+
+/* ============================================================
+   9. 룰렛(SVG) 그리기 및 회전
+   ============================================================ */
+function polarToCartesian(cx, cy, r, angleDeg) {
+  const rad = (angleDeg - 90) * Math.PI / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+function describeSector(cx, cy, r, startAngle, endAngle) {
+  const start = polarToCartesian(cx, cy, r, endAngle);
+  const end = polarToCartesian(cx, cy, r, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+  return ["M", cx, cy, "L", start.x, start.y, "A", r, r, 0, largeArcFlag, 0, end.x, end.y, "Z"].join(" ");
+}
+
+// highlightIndex: 이번 시행의 "당첨 칸"으로 표시할 세그먼트 인덱스 (빨강)
+function drawWheel(highlightIndex) {
+  const g = document.getElementById("wheelGroup");
+  g.innerHTML = "";
+  const n = CONFIG.N_SEGMENTS;
+  const segAngle = 360 / n;
+  const cx = 160, cy = 160, rOuter = 148, rSeg = 145; // 외곽선을 더 얇게(림 두께 축소)
+
+  // 당첨 칸용 금색 그라데이션 정의
+  const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+  const grad = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
+  grad.setAttribute("id", "goldWinGrad");
+  grad.setAttribute("x1", "0%"); grad.setAttribute("y1", "0%");
+  grad.setAttribute("x2", "100%"); grad.setAttribute("y2", "100%");
+  const stops = [
+    { offset: "0%", color: "#F6DE8C" },
+    { offset: "50%", color: "#C9A227" },
+    { offset: "100%", color: "#8C6A12" }
+  ];
+  stops.forEach(s => {
+    const stop = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+    stop.setAttribute("offset", s.offset);
+    stop.setAttribute("stop-color", s.color);
+    grad.appendChild(stop);
+  });
+  defs.appendChild(grad);
+  g.appendChild(defs);
+
+  // 외곽 테두리: 검정 림(rim)
+  const rim = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  rim.setAttribute("cx", cx);
+  rim.setAttribute("cy", cy);
+  rim.setAttribute("r", rOuter);
+  rim.setAttribute("fill", "var(--black)");
+  g.appendChild(rim);
+
+  for (let i = 0; i < n; i++) {
+    const start = i * segAngle;
+    const end = start + segAngle;
+    const isWinSeg = (i === highlightIndex);
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", describeSector(cx, cy, rSeg, start, end));
+    path.setAttribute("fill", isWinSeg ? "url(#goldWinGrad)" : "var(--white)");
+    path.setAttribute("stroke", "var(--black)");
+    path.setAttribute("stroke-width", "1");
+    if (state.condition === "casino") {
+      path.style.cursor = "pointer";
+      path.addEventListener("click", () => selectCasinoSegment(i));
+    }
+    g.appendChild(path);
+
+    const mid = start + segAngle / 2;
+
+    if (isWinSeg) {
+      // 당첨 칸 표시: "당첨" 한 줄
+      const p = polarToCartesian(cx, cy, rSeg * 0.68, mid);
+      const t1 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      t1.setAttribute("x", p.x); t1.setAttribute("y", p.y);
+      t1.setAttribute("text-anchor", "middle"); t1.setAttribute("dominant-baseline", "middle");
+      t1.setAttribute("font-size", "14"); t1.setAttribute("font-weight", "800");
+      t1.setAttribute("fill", "#1B1404"); t1.style.pointerEvents = "none";
+      t1.textContent = "당첨";
+      g.appendChild(t1);
+    } else if (state.condition === "casino") {
+      const labelPos = polarToCartesian(cx, cy, rSeg * 0.7, mid);
+      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      text.setAttribute("x", labelPos.x);
+      text.setAttribute("y", labelPos.y);
+      text.setAttribute("text-anchor", "middle");
+      text.setAttribute("dominant-baseline", "middle");
+      text.setAttribute("font-size", "13");
+      text.setAttribute("font-weight", "700");
+      text.setAttribute("fill", "var(--black)");
+      text.style.pointerEvents = "none";
+      text.textContent = state.wheelNumberOrder[i];
+      g.appendChild(text);
+    }
+  }
+}
+
+function spinWheelTo(finalIndex, durationMs = CONFIG.SPIN_DURATION_MS) {
+
+  return new Promise((resolve) => {
+    const n = CONFIG.N_SEGMENTS;
+    const segAngle = 360 / n;
+    const targetCenter = finalIndex * segAngle + segAngle / 2;
+    const desiredMod = (360 - targetCenter) % 360;
+    const currentMod = ((state.wheelRotation % 360) + 360) % 360;
+    let diff = (desiredMod - currentMod + 360) % 360;
+    const extraSpins = 6 * 360; // 기본 회전수(점점 느려지는 이징으로 처리)
+    const newRotation = state.wheelRotation + extraSpins + diff;
+
+    const g = document.getElementById("wheelGroup");
+    g.style.transition = `transform ${durationMs}ms cubic-bezier(0.12, 0.85, 0.2, 1)`; // 갈수록 느려짐
+    g.style.transform = `rotate(${newRotation}deg)`;
+    state.wheelRotation = newRotation;
+
+    const onEnd = () => {
+      g.removeEventListener("transitionend", onEnd);
+      resolve();
+    };
+    g.addEventListener("transitionend", onEnd);
+  });
+}
+
+/* ============================================================
+   10. 시행(Trial) 로직
+   ============================================================ */
+function pickRandomExcluding(n, excludeSet) {
+  let idx;
+  do { idx = Math.floor(Math.random() * n); } while (excludeSet.has(idx));
+  return idx;
+}
+
+function computeFinalIndex(outcome, targetIndex) {
+  const n = CONFIG.N_SEGMENTS;
+  if (outcome === "WIN") return targetIndex;
+  if (outcome === "NEARMISS") {
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    return ((targetIndex + dir) % n + n) % n;
+  }
+  // FULLMISS: 당첨 칸 및 그 양옆 제외
+  const exclude = new Set([
+    targetIndex,
+    ((targetIndex - 1) % n + n) % n,
+    ((targetIndex + 1) % n + n) % n
+  ]);
+  return pickRandomExcluding(n, exclude);
+}
+
+function updateHud() {
+  document.getElementById("ticketCount").textContent = (CONFIG.TOTAL_TRIALS - state.trialIndex);
+  document.getElementById("pointCount").textContent = state.points;
+}
+
+// 매 시행 시작 시 당첨 칸(목표 세그먼트)을 미리 정하고 화면에 표시한다.
+// 일반 조건: 무작위 위치를 즉시 결정해 보여줌 / 카지노 조건: 숫자를 고를 때 표시됨
+function startTrialSetup() {
+  if (state.condition === "general") {
+    state.currentTargetIndex = Math.floor(Math.random() * CONFIG.N_SEGMENTS);
+    drawWheel(state.currentTargetIndex);
+  } else {
+    state.currentTargetIndex = null;
+    state.selectedNumber = null;
+    drawWheel(null);
+    const disp = document.getElementById("selectedNumberDisplay");
+    if (disp) { disp.style.display = "none"; disp.textContent = ""; }
+  }
+}
+
+/* ============================================================
+   사운드 이펙트 (외부 음원 파일 없이 Web Audio API로 자체 생성)
+   - 브라우저의 자동재생 정책 때문에 사용자가 버튼을 누른 시점(스핀 시작 클릭)에
+     AudioContext를 처음 만들고 재생해야 소리가 정상적으로 납니다.
+   ============================================================ */
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null; // 오디오를 지원하지 않는 브라우저는 조용히 무시
+    audioCtx = new AC();
+  }
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+
+// 룰렛이 도는 동안: 점점 간격이 벌어지는(감속하는) 딸깍 소리
+function playSpinSound(durationMs) {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  const totalSec = durationMs / 1000;
+  let t = 0;
+  let interval = 0.06;
+  while (t < totalSec) {
+    const start = now + t;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "square";
+    osc.frequency.value = 900;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.12, start + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.045);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(start);
+    osc.stop(start + 0.05);
+    t += interval;
+    interval *= 1.055; // 갈수록 느려짐(룰렛 감속과 어울리도록)
+  }
+}
+
+// 당첨 시: 짧은 상승 아르페지오
+function playWinSound() {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+  notes.forEach((freq, i) => {
+    const start = now + i * 0.09;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "triangle";
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.22, start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.35);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(start);
+    osc.stop(start + 0.4);
+  });
+}
+
+// 당첨 시 화려한 이펙트: 색종이 + 이모지 + 골드 플래시
+function spawnConfetti() {
+  const colors = ["#E4C25C", "#C9A227", "#B3272D", "#F5F1E8", "#FFD700"];
+  const emojis = ["🎉", "✨", "💰", "⭐", "🎊"];
+
+  for (let i = 0; i < 50; i++) {
+    const p = document.createElement("div");
+    p.className = "confetti-piece";
+    p.style.left = Math.random() * 100 + "vw";
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    p.style.animationDelay = (Math.random() * 300) + "ms";
+    p.style.animationDuration = (1400 + Math.random() * 900) + "ms";
+    p.style.transform = `rotate(${Math.random() * 360}deg)`;
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 2600);
+  }
+
+  for (let i = 0; i < 16; i++) {
+    const e = document.createElement("div");
+    e.className = "confetti-emoji";
+    e.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    e.style.left = Math.random() * 100 + "vw";
+    e.style.animationDelay = (Math.random() * 350) + "ms";
+    e.style.fontSize = (18 + Math.random() * 16) + "px";
+    document.body.appendChild(e);
+    setTimeout(() => e.remove(), 2400);
+  }
+
+  const flash = document.createElement("div");
+  flash.className = "win-flash";
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 750);
+}
+
+document.getElementById("btnSpin").addEventListener("click", async () => {
+  if (state.condition === "casino" && state.currentTargetIndex === null) {
+    alert("숫자를 먼저 선택해 주세요.");
+    return;
+  }
+  document.getElementById("btnSpin").disabled = true;
+  state.isSpinning = true;
+
+  const trialNo = state.trialIndex + 1;
+  const outcome = OUTCOME_SEQUENCE[state.trialIndex];
+  const bet = state.selectedBet;
+  const targetIndex = state.currentTargetIndex; // 배팅 단계부터 이미 표시되어 있던 당첨 칸
+  const finalIndex = computeFinalIndex(outcome, targetIndex);
+  const pointsStart = state.points; // 이번 시행 시작 시점의 포인트(배팅 전)
+
+  // 1) '룰렛 시작'을 누르는 즉시: 티켓과 배팅액을 먼저 차감(덜 혼란스럽도록 순서를 명확히 함)
+  state.trialIndex += 1;
+  state.points = pointsStart - bet;
+  updateHud();
+
+  playSpinSound(CONFIG.SPIN_DURATION_MS);
+  await spinWheelTo(finalIndex);
+  state.isSpinning = false;
+
+  // 2) 룰렛이 멈춘 뒤: 당첨이면 배팅액의 5배를 지급, 꽝이면 추가 지급 없음
+  const isWin = (outcome === "WIN");
+  const pointsAfterBet = state.points; // 배팅 차감 직후 값
+  const winnings = isWin ? bet * CONFIG.WIN_MULTIPLIER : 0;
+  state.points = pointsAfterBet + winnings;
+  const pointsFinal = state.points;
+  updateHud();
+
+  // 참가자에게는 "당첨/꽝"만 안내하고, near-miss 여부는 별도로 알리지 않음(민감한 조작 은폐)
+  const banner = document.getElementById("resultBanner");
+  banner.className = "result-banner " + (isWin ? "win" : "lose");
+  banner.innerHTML = isWin
+    ? `당첨입니다!<br>당첨으로 5배인 ${winnings}P를 획득해 ${pointsFinal}P가 되었습니다.`
+    : `이번 시행은 꽝입니다.`;
+  if (isWin) { spawnConfetti(); playWinSound(); }
+
+  // 카지노 조건에서는 룰렛이 실제로 멈춘 칸의 숫자를 "당첨 숫자"로 함께 기록
+  const winningNumber = state.condition === "casino" ? state.wheelNumberOrder[finalIndex] : null;
+
+  state.trials.push({
+    trial_no: trialNo,
+    outcome_type: outcome,          // WIN / NEARMISS / FULLMISS (내부 기록용)
+    bet_amount: bet,
+    winning_number: winningNumber,  // 카지노 조건: 룰렛이 멈춘 칸의 숫자(당첨 숫자)
+    chosen_number: state.condition === "casino" ? state.selectedNumber : null,
+    target_segment: targetIndex,
+    result_segment: finalIndex,
+    points_before: pointsStart,
+    points_after: pointsFinal,
+    cumulative_points: pointsFinal,
+    timestamp: new Date().toISOString()
+  });
+
+  // 이번 시행 데이터는 state.trials에만 쌓아두고, 참가자당 한 줄로 묶어 맨 마지막에 한 번에 전송한다.
+  document.getElementById("btnSpin").style.display = "none";
+  document.getElementById("btnNextTrial").style.display = "block";
+});
+
+document.getElementById("btnNextTrial").addEventListener("click", () => {
+  document.getElementById("resultBanner").className = "result-banner";
+  document.getElementById("resultBanner").textContent = "";
+  document.getElementById("btnSpin").style.display = "block";
+  document.getElementById("btnNextTrial").style.display = "none";
+  document.getElementById("btnSpin").disabled = false;
+
+  // 6시행마다(6, 12, 18, 24, 30) 중간 점검 문항을 먼저 보여준다.
+  if (state.trialIndex % 6 === 0) {
+    renderProbe();
+    showScreen("screen-probe");
+  } else if (state.trialIndex >= CONFIG.TOTAL_TRIALS) {
+    renderPostSurvey();
+    showScreen("screen-post");
+  } else {
+    startTrialSetup(); // 다음 시행의 당첨 칸을 미리 표시
+    showScreen("screen-task");
+  }
+});
+
+/* ============================================================
+   10-1. 중간 점검 (6시행마다)
+   ============================================================ */
+function renderProbe() {
+  const container = document.getElementById("probeContainer");
+  container.innerHTML = "";
+  PROBE_ITEMS.forEach(item => {
+    const initial = 50;
+    const wrap = document.createElement("div");
+    wrap.className = "survey-item";
+    wrap.innerHTML = `
+      <div class="survey-q">${item.q}</div>
+      <div class="survey-value" id="value_${item.id}">${initial}</div>
+      <input type="range" class="linear-slider" id="slider_${item.id}" min="0" max="100" step="1" value="${initial}">`;
+    container.appendChild(wrap);
+  });
+  PROBE_ITEMS.forEach(item => {
+    const slider = document.getElementById("slider_" + item.id);
+    const valueEl = document.getElementById("value_" + item.id);
+    updateSliderFill(slider);
+    slider.oninput = (e) => {
+      valueEl.textContent = e.target.value;
+      updateSliderFill(slider);
+    };
+  });
+}
+
+document.getElementById("btnProbe").addEventListener("click", () => {
+  state.checkpoints.push({
+    checkpoint_trial: state.trialIndex,
+    prob_estimate: Number(document.getElementById("slider_probe_prob").value),
+    continue_desire: Number(document.getElementById("slider_probe_continue").value)
+  });
+
+  if (state.trialIndex >= CONFIG.TOTAL_TRIALS) {
+    renderPostSurvey();
+    showScreen("screen-post");
+  } else {
+    startTrialSetup();
+    showScreen("screen-task");
+  }
+});
+
+/* ============================================================
+   11. 사후 설문 (연구자가 최초로 작성한 6개 문항 그대로 사용)
+   ============================================================ */
+function renderPostSurvey() {
+  const container = document.getElementById("postContainer");
+  container.innerHTML = "";
+  POST_ITEMS.forEach((item, idx) => {
+    const wrap = document.createElement("div");
+    wrap.className = "survey-item";
+    if (item.type === "scale") {
+      const initial = Math.round((item.min + item.max) / 2);
+      wrap.innerHTML = `
+        <div class="survey-q">${idx+1}. ${item.q}</div>
+        ${item.note ? `<div class="survey-note">(${item.note})</div>` : ""}
+        <div class="survey-value" id="value_${item.id}">${initial}</div>
+        <input type="range" class="linear-slider" id="slider_${item.id}"
+               min="${item.min}" max="${item.max}" step="1" value="${initial}">`;
+    } else if (item.type.startsWith("likert")) {
+      const maxVal = Number(item.type.replace("likert", "")); // "likert5" -> 5, "likert7" -> 7
+      const scaleHtml = Array.from({length: maxVal}, (_, k) => k + 1).map(v => `
+        <div class="likert-opt">
+          <input type="radio" name="${item.id}" id="${item.id}_${v}" value="${v}">
+          <label for="${item.id}_${v}"><span class="likert-dot">${v}</span></label>
+        </div>`).join("");
+      wrap.innerHTML = `
+        <div class="survey-q">${idx+1}. ${item.q}</div>
+        <div class="likert-scale">${scaleHtml}</div>
+        <div style="display:flex; justify-content:space-between; margin-top:4px;">
+          <span class="likert-caption">전혀 아니다</span>
+          <span class="likert-caption" style="text-align:right;">매우 그렇다</span>
+        </div>`;
+    }
+    container.appendChild(wrap);
+  });
+
+  POST_ITEMS.filter(i => i.type === "scale").forEach(item => {
+    const initial = Math.round((item.min + item.max) / 2);
+    state.post[item.id] = initial;
+    const slider = document.getElementById("slider_" + item.id);
+    const valueEl = document.getElementById("value_" + item.id);
+    updateSliderFill(slider);
+    slider.oninput = (e) => {
+      state.post[item.id] = Number(e.target.value);
+      valueEl.textContent = e.target.value;
+      updateSliderFill(slider);
+      checkPostComplete();
+    };
+  });
+
+  container.addEventListener("change", checkPostComplete);
+  checkPostComplete();
+}
+
+function checkPostComplete() {
+  const scaleDone = POST_ITEMS.filter(i => i.type === "scale").every(i => state.post[i.id] !== undefined);
+  const likertDone = POST_ITEMS.filter(i => i.type.startsWith("likert"))
+    .every(i => document.querySelector(`input[name="${i.id}"]:checked`));
+  document.getElementById("btnPost").disabled = !(scaleDone && likertDone);
+}
+
+document.getElementById("btnPost").addEventListener("click", () => {
+  POST_ITEMS.filter(i => i.type.startsWith("likert")).forEach(i => {
+    state.post[i.id] = Number(document.querySelector(`input[name="${i.id}"]:checked`).value);
+  });
+
+  document.getElementById("finalPointsDisplay").textContent = state.points + "P";
+  const raffleEligible = state.points >= CONFIG.RAFFLE_THRESHOLD;
+  const raffleNote = document.getElementById("raffleNote");
+  // 기준 미달 시에는 별도 문구 없이 조용히 넘어감(달성했을 때만 안내)
+  raffleNote.textContent = raffleEligible ? "답례품 추첨 확률 상승 기준을 충족하였습니다." : "";
+  raffleNote.className = raffleEligible ? "raffle-yes" : "raffle-no";
+
+  showScreen("screen-debrief");
+});
+
+/* ============================================================
+   12. 제출 (구글 시트 연동) — 참가자 1명당 1행(가로로 긴 wide-format)
+   ============================================================
+   Google Apps Script(GAS) 웹 앱을 배포하여 CONFIG.GAS_URL에 넣으면 됩니다.
+   이 파일은 세션 내내 모든 응답을 state에만 모아두다가, 맨 마지막(제출 버튼)에
+   딱 한 번 fetch를 호출해 "참가자 1명 = 1행" 형태로 전송합니다.
+   시트 탭 이름은 "responses_general" / "responses_casino"로 조건별로 나뉩니다.
+
+   Apps Script 쪽 doPost() 예시(헤더가 없으면 만들고, 새로운 컬럼이 생기면
+   기존 시트에도 자동으로 컬럼을 넓혀가며 값을 채워 넣습니다):
+
+   function doPost(e) {
+     const data = JSON.parse(e.postData.contents);
+     const ss = SpreadsheetApp.getActiveSpreadsheet();
+     let sheet = ss.getSheetByName(data.sheet);
+     if (!sheet) sheet = ss.insertSheet(data.sheet);
+
+     const row = data.row;
+     const keys = Object.keys(row);
+     const lastCol = sheet.getLastColumn();
+
+     if (lastCol === 0) {
+       // 시트가 비어 있으면 헤더를 첫 행으로 생성
+       sheet.appendRow(keys);
+     } else {
+       // 기존 헤더에 없는 새 컬럼이 있으면 뒤에 추가
+       const header = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+       const newKeys = keys.filter(k => header.indexOf(k) === -1);
+       if (newKeys.length > 0) {
+         sheet.getRange(1, lastCol + 1, 1, newKeys.length).setValues([newKeys]);
+       }
+     }
+
+     // 현재 헤더 순서에 맞춰 값 배열을 구성(빠진 값은 빈 칸으로 채움)
+     const header2 = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+     const values = header2.map(h => (h in row) ? row[h] : "");
+     sheet.appendRow(values);
+
+     return ContentService.createTextOutput("OK");
+   }
+   ============================================================ */
+function submitRow(sheetName, rowObj) {
+  const payload = { sheet: sheetName, row: rowObj };
+  fetch(CONFIG.GAS_URL, {
+    method: "POST",
+    mode: "no-cors", // GAS 웹 앱 특성상 no-cors로 전송(응답 확인 불가, 실패 시 콘솔에서 URL 점검 필요)
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
+  }).catch(err => console.error("전송 실패:", err));
+}
+
+// 세션 전체 데이터를 한 참가자 = 한 행으로 평평하게(flatten) 펼친다.
+function buildFinalRow() {
+  const row = {
+    participant_id: state.participantId,
+    condition: state.condition,
+    consent_time: state.consentTime,
+    ...state.grcs // grcs1 ~ grcs6, grcs_sum
+  };
+
+  // 시행별 데이터: trial1_outcome, trial1_bet, trial1_points_after ... trial30_...
+  state.trials.forEach(t => {
+    const n = t.trial_no;
+    row[`trial${n}_outcome`] = t.outcome_type; // 내부 기록용(WIN/NEARMISS/FULLMISS)
+    row[`trial${n}_bet`] = t.bet_amount;
+    if (state.condition === "casino") {
+      row[`trial${n}_chosen_number`] = t.chosen_number;
+      row[`trial${n}_winning_number`] = t.winning_number;
+    }
+    row[`trial${n}_points_after`] = t.points_after;
+  });
+
+  // 6시행마다 중간 점검: checkpoint6_prob_estimate, checkpoint6_continue_desire ...
+  state.checkpoints.forEach(c => {
+    row[`checkpoint${c.checkpoint_trial}_prob_estimate`] = c.prob_estimate;
+    row[`checkpoint${c.checkpoint_trial}_continue_desire`] = c.continue_desire;
+  });
+
+  Object.assign(row, state.post); // post1 ~ post6
+  row.total_points_final = state.points;
+  row.raffle_eligible = state.points >= CONFIG.RAFFLE_THRESHOLD;
+  row.submitted_at = new Date().toISOString();
+  return row;
+}
+
+document.getElementById("btnSubmit").addEventListener("click", () => {
+  const finalRow = buildFinalRow();
+  submitRow("responses_" + state.condition, finalRow);
+  showScreen("screen-end");
+});
+</script>
+</body>
+</html>
