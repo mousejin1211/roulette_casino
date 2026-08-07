@@ -373,7 +373,7 @@
    ============================================================ */
 const CONFIG = {
   // Google Apps Script 웹 앱 배포 URL로 교체할 것
-  GAS_URL: "https://script.google.com/macros/s/AKfycbxE7WiXgAmQLDcKFOljuwj6__aSDjRAJl4Ilc79cwZVvKR9GEhrGTdWe-GC6MhbRpHzJw/exec",
+  GAS_URL: "https://script.google.com/macros/s/AKfycbwgOH1Lsn8dE6RS0aJb99Rcr1FlrS0Dyea4O7VVSixztXI31QVXDga5kr-2zADJrDHFvQ/exec",
   INITIAL_POINTS: 5000,
   BET_MIN: 20,
   BET_MAX: 100,
@@ -1077,15 +1077,24 @@ document.getElementById("btnPost").addEventListener("click", () => {
 });
 
 /* ============================================================
-   12. 제출 (구글 시트 연동) — 참가자 1명당 1행(가로로 긴 wide-format)
+   12. 제출 (구글 시트 연동) — 통계내기 편하도록 탭 2개로 분리
    ============================================================
    Google Apps Script(GAS) 웹 앱을 배포하여 CONFIG.GAS_URL에 넣으면 됩니다.
-   이 파일은 세션 내내 모든 응답을 state에만 모아두다가, 맨 마지막(제출 버튼)에
-   딱 한 번 fetch를 호출해 "참가자 1명 = 1행" 형태로 전송합니다.
-   시트 탭 이름은 "responses_general" / "responses_casino"로 조건별로 나뉩니다.
+   "응답 제출하기" 버튼을 누르는 순간 딱 두 번 전송합니다.
 
-   Apps Script 쪽 doPost() 예시(헤더가 없으면 만들고, 새로운 컬럼이 생기면
-   기존 시트에도 자동으로 컬럼을 넓혀가며 값을 채워 넣습니다):
+   1) participants_general / participants_casino 탭
+      - 참가자 1명 = 1행. GRCS, 중간 점검, 사후설문, 요약 통계(총 승리 횟수 등)만 담음.
+      - 컬럼 수가 적어서 조건 간 평균 비교, GRCS와 설문 응답 간 상관 등
+        참가자 단위 통계를 낼 때 바로 쓰기 좋습니다.
+
+   2) trials_general / trials_casino 탭
+      - 참가자 1명당 30행(시행마다 1행)인 긴(long-format) 표.
+      - 니어미스 효과, 배팅액 변화 추이처럼 "시행 단위"로 분석할 때는
+        이 표를 participant_id로 묶어서(group by) 쓰면 됩니다.
+      - trial1_outcome, trial1_bet ... 식으로 옆으로 늘어놓지 않고,
+        trial_no라는 컬럼 하나로 시행 번호를 표시합니다.
+
+   Apps Script 쪽 doPost() 예시(단일 행 저장과 여러 행 한 번에 저장을 모두 지원):
 
    function doPost(e) {
      const data = JSON.parse(e.postData.contents);
@@ -1093,32 +1102,42 @@ document.getElementById("btnPost").addEventListener("click", () => {
      let sheet = ss.getSheetByName(data.sheet);
      if (!sheet) sheet = ss.insertSheet(data.sheet);
 
-     const row = data.row;
-     const keys = Object.keys(row);
-     const lastCol = sheet.getLastColumn();
+     // data.rows(배열)가 있으면 그걸 쓰고, 없으면 data.row 하나를 배열로 감싼다.
+     const rowsToWrite = data.rows ? data.rows : [data.row];
 
-     if (lastCol === 0) {
-       // 시트가 비어 있으면 헤더를 첫 행으로 생성
-       sheet.appendRow(keys);
-     } else {
-       // 기존 헤더에 없는 새 컬럼이 있으면 뒤에 추가
-       const header = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
-       const newKeys = keys.filter(k => header.indexOf(k) === -1);
-       if (newKeys.length > 0) {
-         sheet.getRange(1, lastCol + 1, 1, newKeys.length).setValues([newKeys]);
+     rowsToWrite.forEach(row => {
+       const keys = Object.keys(row);
+       const lastCol = sheet.getLastColumn();
+
+       if (lastCol === 0) {
+         // 시트가 비어 있으면 헤더를 첫 행으로 생성
+         sheet.appendRow(keys);
+       } else {
+         // 기존 헤더에 없는 새 컬럼이 있으면 뒤에 추가
+         const header = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+         const newKeys = keys.filter(k => header.indexOf(k) === -1);
+         if (newKeys.length > 0) {
+           sheet.getRange(1, lastCol + 1, 1, newKeys.length).setValues([newKeys]);
+         }
        }
-     }
 
-     // 현재 헤더 순서에 맞춰 값 배열을 구성(빠진 값은 빈 칸으로 채움)
-     const header2 = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-     const values = header2.map(h => (h in row) ? row[h] : "");
-     sheet.appendRow(values);
+       // 현재 헤더 순서에 맞춰 값 배열을 구성(빠진 값은 빈 칸으로 채움)
+       const header2 = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+       const values = header2.map(h => (h in row) ? row[h] : "");
+       sheet.appendRow(values);
+     });
 
      return ContentService.createTextOutput("OK");
    }
    ============================================================ */
 function submitRow(sheetName, rowObj) {
-  const payload = { sheet: sheetName, row: rowObj };
+  submitPayload(sheetName, { row: rowObj });
+}
+function submitRows(sheetName, rowsArray) {
+  submitPayload(sheetName, { rows: rowsArray });
+}
+function submitPayload(sheetName, body) {
+  const payload = { sheet: sheetName, ...body };
   fetch(CONFIG.GAS_URL, {
     method: "POST",
     mode: "no-cors", // GAS 웹 앱 특성상 no-cors로 전송(응답 확인 불가, 실패 시 콘솔에서 URL 점검 필요)
@@ -1127,26 +1146,15 @@ function submitRow(sheetName, rowObj) {
   }).catch(err => console.error("전송 실패:", err));
 }
 
-// 세션 전체 데이터를 한 참가자 = 한 행으로 평평하게(flatten) 펼친다.
-function buildFinalRow() {
+// 참가자 단위 요약 행 (GRCS, 중간 점검, 사후설문, 요약 통계) — 컬럼이 적어 통계 내기 편함
+function buildParticipantRow() {
+  const totalWins = state.trials.filter(t => t.outcome_type === "WIN").length;
   const row = {
     participant_id: state.participantId,
     condition: state.condition,
     consent_time: state.consentTime,
-    ...state.grcs // grcs1 ~ grcs6, grcs_sum
+    ...state.grcs, // grcs1 ~ grcs6, grcs_sum
   };
-
-  // 시행별 데이터: trial1_outcome, trial1_bet, trial1_points_after ... trial30_...
-  state.trials.forEach(t => {
-    const n = t.trial_no;
-    row[`trial${n}_outcome`] = t.outcome_type; // 내부 기록용(WIN/NEARMISS/FULLMISS)
-    row[`trial${n}_bet`] = t.bet_amount;
-    if (state.condition === "casino") {
-      row[`trial${n}_chosen_number`] = t.chosen_number;
-      row[`trial${n}_winning_number`] = t.winning_number;
-    }
-    row[`trial${n}_points_after`] = t.points_after;
-  });
 
   // 6시행마다 중간 점검: checkpoint6_prob_estimate, checkpoint6_continue_desire ...
   state.checkpoints.forEach(c => {
@@ -1155,15 +1163,30 @@ function buildFinalRow() {
   });
 
   Object.assign(row, state.post); // post1 ~ post6
+  row.trials_completed = state.trials.length;
+  row.total_wins = totalWins; // 실제로 당첨된 시행 수(참가자의 사후 추정치 post4와 비교하기 좋음)
   row.total_points_final = state.points;
-  row.raffle_eligible = state.points >= CONFIG.RAFFLE_THRESHOLD;
   row.submitted_at = new Date().toISOString();
   return row;
 }
 
+// 시행 단위 로그(long-format): 참가자 1명당 30행. trial_no로 시행 번호를 구분한다.
+function buildTrialRows() {
+  return state.trials.map(t => ({
+    participant_id: state.participantId,
+    condition: state.condition,
+    trial_no: t.trial_no,
+    outcome_type: t.outcome_type, // WIN / NEARMISS / FULLMISS (내부 기록용)
+    bet_amount: t.bet_amount,
+    chosen_number: t.chosen_number,   // 카지노 조건에서만 값이 있고, 일반 조건은 빈 값
+    winning_number: t.winning_number, // 카지노 조건에서만 값이 있고, 일반 조건은 빈 값
+    points_after: t.points_after
+  }));
+}
+
 document.getElementById("btnSubmit").addEventListener("click", () => {
-  const finalRow = buildFinalRow();
-  submitRow("responses_" + state.condition, finalRow);
+  submitRow("participants_" + state.condition, buildParticipantRow());
+  submitRows("trials_" + state.condition, buildTrialRows());
   showScreen("screen-end");
 });
 </script>
