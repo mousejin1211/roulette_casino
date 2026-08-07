@@ -689,13 +689,13 @@ function drawWheel(highlightIndex) {
   }
 }
 
-function spinWheelTo(finalIndex, durationMs = CONFIG.SPIN_DURATION_MS) {
-
+function spinWheelTo(finalIndex, bias = 0.5, durationMs = CONFIG.SPIN_DURATION_MS) {
+  // bias: 그 칸 안에서 정확히 어디에 멈출지(0 = 칸 시작 쪽 경계, 1 = 칸 끝 쪽 경계, 0.5 = 정중앙)
   return new Promise((resolve) => {
     const n = CONFIG.N_SEGMENTS;
     const segAngle = 360 / n;
-    const targetCenter = finalIndex * segAngle + segAngle / 2;
-    const desiredMod = (360 - targetCenter) % 360;
+    const targetPoint = finalIndex * segAngle + segAngle * bias;
+    const desiredMod = (360 - targetPoint) % 360;
     const currentMod = ((state.wheelRotation % 360) + 360) % 360;
     let diff = (desiredMod - currentMod + 360) % 360;
     const extraSpins = 6 * 360; // 기본 회전수(점점 느려지는 이징으로 처리)
@@ -723,20 +723,41 @@ function pickRandomExcluding(n, excludeSet) {
   return idx;
 }
 
-function computeFinalIndex(outcome, targetIndex) {
+// 칸 경계에 너무 붙어서 애매하게 보이지 않도록, 멈추는 위치를 이 범위(0~1) 안에서만 고른다.
+const STOP_MARGIN = 0.14;
+
+// biasCenter를 중심으로 spread만큼 무작위로 흔들되, 항상 그 칸 안(margin~1-margin)에 머무르게 한다.
+function randomBiasNear(biasCenter, spread) {
+  const raw = biasCenter + (Math.random() - 0.5) * spread;
+  return Math.max(STOP_MARGIN, Math.min(1 - STOP_MARGIN, raw));
+}
+
+// 결과 등급(outcome)에 따라 "몇 번 칸에서 멈출지"와 "그 칸의 어느 위치에서 멈출지"를 함께 정한다.
+function computeFinalPosition(outcome, targetIndex) {
   const n = CONFIG.N_SEGMENTS;
-  if (outcome === "WIN") return targetIndex;
+
+  if (outcome === "WIN") {
+    // 당첨 칸 안에서도 매번 같은 정중앙이 아니라 위치가 조금씩 달라지도록
+    return { index: targetIndex, bias: randomBiasNear(0.5, 0.55) };
+  }
+
   if (outcome === "NEARMISS") {
     const dir = Math.random() < 0.5 ? -1 : 1;
-    return ((targetIndex + dir) % n + n) % n;
+    const neighbor = ((targetIndex + dir) % n + n) % n;
+    // dir=+1이면 이웃 칸의 "시작" 쪽 경계가, dir=-1이면 "끝" 쪽 경계가 당첨 칸과 맞닿아 있다.
+    // 그 경계 쪽에 가깝게(하지만 옆 칸 범위 안에서만) 멈추게 해서 "아쉽게 놓친" 느낌을 준다.
+    const biasCenter = dir === 1 ? 0.22 : 0.78;
+    return { index: neighbor, bias: randomBiasNear(biasCenter, 0.22) };
   }
-  // FULLMISS: 당첨 칸 및 그 양옆 제외
+
+  // FULLMISS: 당첨 칸 및 그 양옆 제외, 칸 안에서 위치도 매번 다르게
   const exclude = new Set([
     targetIndex,
     ((targetIndex - 1) % n + n) % n,
     ((targetIndex + 1) % n + n) % n
   ]);
-  return pickRandomExcluding(n, exclude);
+  const idx = pickRandomExcluding(n, exclude);
+  return { index: idx, bias: randomBiasNear(0.5, 0.6) };
 }
 
 function updateHud() {
@@ -867,7 +888,7 @@ document.getElementById("btnSpin").addEventListener("click", async () => {
   const outcome = OUTCOME_SEQUENCE[state.trialIndex];
   const bet = state.selectedBet;
   const targetIndex = state.currentTargetIndex; // 배팅 단계부터 이미 표시되어 있던 당첨 칸
-  const finalIndex = computeFinalIndex(outcome, targetIndex);
+  const { index: finalIndex, bias } = computeFinalPosition(outcome, targetIndex);
   const pointsStart = state.points; // 이번 시행 시작 시점의 포인트(배팅 전)
 
   // 1) '룰렛 시작'을 누르는 즉시: 티켓과 배팅액을 먼저 차감(덜 혼란스럽도록 순서를 명확히 함)
@@ -876,7 +897,7 @@ document.getElementById("btnSpin").addEventListener("click", async () => {
   updateHud();
 
   playSpinSound(CONFIG.SPIN_DURATION_MS);
-  await spinWheelTo(finalIndex);
+  await spinWheelTo(finalIndex, bias);
   state.isSpinning = false;
 
   // 2) 룰렛이 멈춘 뒤: 당첨이면 배팅액의 5배를 지급, 꽝이면 추가 지급 없음
