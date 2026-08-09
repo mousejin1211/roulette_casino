@@ -239,7 +239,7 @@
       심리학 연구입니다. 참여는 완전히 자발적이며, 참여 도중 언제든지 불이익 없이 중단하실 수 있습니다.</p>
       <p>본 과제에서는 약 30회의 게임 시행과 짧은 설문에 응답하시게 되며, 소요 시간은 약 15~20분입니다.
       수집된 자료는 연구 목적으로만 사용되며, 개인을 식별할 수 있는 정보는 분리하여 안전하게 보관됩니다.</p>
-      <p class="muted">문의: [연구책임자 이메일/연락처 기입]</p>
+      <p class="muted">문의: 한지민 (han437723@gmail.com), 주소희 (asdzxc9889@naver.com), 이어진 (qpwoeiruty12332@naver.com)</p>
       <div class="checkbox-row">
         <input type="checkbox" id="consentCheck">
         <label for="consentCheck" style="font-size:13.5px; line-height:1.5;">
@@ -353,7 +353,12 @@
         <div class="num" id="finalPointsDisplay">0</div>
         <div id="raffleNote" class="muted"></div>
       </div>
-      <button class="btn-primary" id="btnSubmit">응답 제출하기</button>
+
+      <div class="divider"></div>
+      <p class="muted" style="margin-bottom:8px;">답례품(기프티콘) 전달을 위해 연락처를 입력해 주세요. 이 정보는 답례품 전달 용도로만 사용되며, 실험 응답 데이터와는 분리하여 보관됩니다.</p>
+      <input type="text" id="contactInput" placeholder="전화번호 (예: 010-1234-5678)">
+
+      <button class="btn-primary" id="btnSubmit" disabled>응답 제출하기</button>
     </div>
   </section>
 
@@ -446,6 +451,7 @@ const state = {
   currentTargetIndex: null, // 이번 시행에서 배팅 단계부터 표시되는 당첨 칸 인덱스
   isSpinning: false,        // 스핀 중에는 카지노 조건에서 칸을 다시 선택할 수 없도록 잠금
   checkpoints: [],          // 6시행마다 묻는 중간 점검 응답 로그
+  contact: "",              // 답례품 전달용 연락처(디브리핑 화면에서 입력)
   post: {}
 };
 
@@ -1076,6 +1082,12 @@ document.getElementById("btnPost").addEventListener("click", () => {
   showScreen("screen-debrief");
 });
 
+// 연락처를 입력해야만 제출 버튼이 활성화됨
+document.getElementById("contactInput").addEventListener("input", (e) => {
+  state.contact = e.target.value.trim();
+  document.getElementById("btnSubmit").disabled = state.contact.length === 0;
+});
+
 /* ============================================================
    12. 제출 (구글 시트 연동) — 통계내기 편하도록 탭 2개로 분리
    ============================================================
@@ -1187,6 +1199,15 @@ function buildTrialRows() {
 document.getElementById("btnSubmit").addEventListener("click", () => {
   submitRow("participants_" + state.condition, buildParticipantRow());
   submitRows("trials_" + state.condition, buildTrialRows());
+
+  // 연락처(PII)는 실험 응답 데이터와 분리된 별도 탭으로 전송
+  // (참가자 번호로만 연결되고, 시행/설문 데이터가 있는 탭에는 연락처가 섞이지 않음)
+  submitRow("contacts_" + state.condition, {
+    participant_id: state.participantId,
+    contact: state.contact,
+    submitted_at: new Date().toISOString()
+  });
+
   showScreen("screen-end");
 });
 </script>
